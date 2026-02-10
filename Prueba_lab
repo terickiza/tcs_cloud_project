@@ -1,4 +1,4 @@
-curl -i -X POST "http://IP_PUBLICA:5000/DevOps" \
+curl -i -X POST "http:/http://20.121.1.123:5000/" \
   -H "Content-Type: application/json" \
   -d '{
     "message": "This is a test",
