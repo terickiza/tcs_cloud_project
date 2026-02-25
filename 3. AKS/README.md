@@ -99,3 +99,46 @@ kubectl cluster-info
 ```
 
 **NUNCA intentes destruir Network si AKS aún existe.**
+
+---
+
+## 📚 Enlaces Útiles
+
+- [Terraform Azure Provider - AKS](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/kubernetes_cluster)
+- [Azure Kubernetes Service (AKS)](https://docs.microsoft.com/es-es/azure/aks/)
+- [Azure Container Networking Interface (CNI)](https://docs.microsoft.com/en-us/azure/aks/configure-azure-cni)
+- [Workload Identity in AKS](https://docs.microsoft.com/en-us/azure/aks/workload-identity-overview)
+- [kubectl Documentation](https://kubernetes.io/docs/reference/kubectl/)
+- [AKS Best Practices](https://docs.microsoft.com/en-us/azure/aks/best-practices)
+- [AKS VM Size Selector](https://aka.ms/aks/vm-size-selector)
+
+---
+
+## 👤 Autor y Versión
+
+- **Versión**: 1.0
+- **Creado**: 2024-2025
+- **Actualizado**: Febrero 2026
+- **Propietario**: erick.iza
+- **Equipo**: Azure AKS Microservice Platform
+
+---
+
+## 📄 Licencia
+
+Este proyecto forma parte del laboratorio **Azure AKS Microservice Platform** - Laboratorio de Azure. Uso exclusivo para fines educativos y de demostración.
+
+---
+
+## 📞 Soporte
+
+Para problemas o preguntas:
+1. Validar conexión: `kubectl cluster-info`
+2. Ver logs de eventos: `kubectl get events --all-namespaces`
+3. Revisar estado del cluster: `az aks show --resource-group rg-cloud-lab --name aks-e08`
+4. Consultar documentación oficial de AKS
+5. Contactar al propietario del proyecto
+
+---
+
+**Última actualización**: 25 de febrero de 2026**
