@@ -403,8 +403,7 @@ Parte del laboratorio **Azure AKS Microservice Platform** - Laboratorio de Azure
 Para problemas o reports:
 1. Validar aplicación localmente: `python app.py`
 2. Revisar logs de Kubernetes: `kubectl logs`
-3. Verificar configuración de APIM
-4. Consultar documentación de Azure
+3. Consultar documentación de Azure
 
 ---
 
