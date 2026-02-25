@@ -42,7 +42,7 @@ Este proyecto define y despliega recursos de networking en Azure:
 ### 1. **Virtual Network (VNet)**
 ```hcl
 Nombre:           demo-aks-vnet (configurable)
-Espacio:          10.40.0.0/16 (configurable)
+Espacio:          10.58.0.0/16 (configurable)
 Proveedor:        azurerm_virtual_network
 Tags:             owner, managed-by, env
 ```
@@ -50,7 +50,7 @@ Tags:             owner, managed-by, env
 ### 2. **Subnet**
 ```hcl
 Nombre:           demo-aks-snet-aks (configurable)
-Rango CIDR:       10.40.1.0/24 (configurable)
+Rango CIDR:       10.58.1.0/24 (configurable)
 VNet:             Pertenece a la VNet creada
 Políticas:        Private Endpoints habilitados
 ```
