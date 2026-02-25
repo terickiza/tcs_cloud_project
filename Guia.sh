@@ -1,5 +1,26 @@
 --
-##INSTALACION DE DOCKER
+##INSTALACION DE DOCKER 
+#Preparar el sistema para la instalación de Docker
+sudo apt-get update   
+sudo apt install -y ca-certificates curl gnupg lsb-release
+sudo mkdir -p /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmour -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+#Instalar Docker Engine, CLI y Containerd
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+#Habilitar y arrancar el servicio de Docker
+sudo systemctl enable --now docker
+#Agregar el usuario actual al grupo de Docker para ejecutar comandos sin sudo
+sudo usermod -aG docker $USER
+# Cerrar sesión y volver a entrar o ejecutar:
+newgrp docker
+#Verificar la instalación de Docker ejecutando el comando hello-world
+docker version
+docker run --rm hello-world
+--
 #INSTALACION DE KUBCTL
 sudo apt-get update
 sudo apt-get install -y kubectl
@@ -14,6 +35,7 @@ echo "deb [arch=$(dpkg --print-architecture)] https://packages.microsoft.com/rep
     sudo tee /etc/apt/sources.list.d/azure-cli.list
 sudo apt-get update
 sudo apt-get install azure-cli
+--
 #Comandos para iniciar sesión en Azure CLI
 az version
 #Iniciar sesión en Azure CLI utilizando el código de dispositivo
