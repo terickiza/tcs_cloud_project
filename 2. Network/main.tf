@@ -1,14 +1,9 @@
 # 1) Referenciar el Resource Group ya existente
 data "azurerm_resource_group" "rg" {
-  name = var.rg-cloud-lab
+  name = var.resource_group_name
 }
 
-# 2) (Opcional) Generar sufijo aleatorio por si reutilizas nombres
-resource "random_pet" "suffix" {
-  length = 2
-}
-
-# 3) Crear la VNet en el RG existente
+# 2) Crear la VNet en el RG existente
 resource "azurerm_virtual_network" "vnet" {
   name                = var.vnet_e08
   location            = data.azurerm_resource_group.rg.location
@@ -20,7 +15,7 @@ resource "azurerm_virtual_network" "vnet" {
   tags = var.tags
 }
 
-# 4) Crear una Subnet dentro de la VNet
+# 3) Crear una Subnet dentro de la VNet
 resource "azurerm_subnet" "subnet" {
   name                 = var.subnet_e08
   resource_group_name  = data.azurerm_resource_group.rg.name
@@ -28,7 +23,7 @@ resource "azurerm_subnet" "subnet" {
   address_prefixes     = [var.subnet_e8_prefix]
 }
 
-# 5) (Opcional) Network Security Group y asociación
+# 4) (Opcional) Network Security Group y asociación
 #    Si quieres reglas básicas, descomenta este bloque y la asociación
 
 # resource "azurerm_network_security_group" "nsg" {

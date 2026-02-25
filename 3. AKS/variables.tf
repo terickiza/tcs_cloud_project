@@ -1,24 +1,30 @@
-variable "rg-cloud-lab" {
-  description = "Nombre del Resource Group existente en Azure donde se desplegarán los recursos."
+// Variables para el despliegue de AKS (módulo 3. AKS)
+
+variable "resource_group_name" {
+  description = "Resource Group donde existe la VNet/Subnet"
   type        = string
 }
 
-variable "vnet-e08" {
-  description = "Nombre de la VNet existente."
+variable "vnet_name" {
+  description = "Nombre de la Virtual Network"
   type        = string
+  default     = "vnet-e08"
 }
 
-variable "snet-e08" {
-  description = "Nombre de la Subnet existente para los nodos AKS."
+variable "subnet_name" {
+  description = "Nombre de la Subnet donde se conectará AKS (Azure CNI)"
   type        = string
+  default     = "snet-e08"
 }
 
-variable "aks-e08" {
-  description = "Nombre del clúster AKS a crear."
+variable "aks_name" {
+  description = "Nombre del cluster AKS"
   type        = string
+  default     = "aks-e08"
 }
 
 variable "location" {
-  description = "Región del AKS (debe coincidir con la VNet/Subnet)."
+  description = "Región donde desplegar AKS"
   type        = string
+  default     = "eastus"
 }

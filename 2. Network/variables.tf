@@ -1,12 +1,7 @@
-variable "rg-cloud-lab" {
+variable "resource_group_name" {
   description = "Nombre del Resource Group existente en Azure donde se desplegarán los recursos."
   type        = string
 }
-
-#variable "location" {
-#  description = "Ubicación/Región de Azure (debe coincidir con la del RG existente para evitar errores)."
-#  type        = string
-#}
 
 variable "vnet_e08" {
   description = "Nombre de la Virtual Network a crear."
