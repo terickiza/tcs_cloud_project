@@ -1,0 +1,23 @@
+# Normaliza los fin de línea: LF en el repo, sin importar el SO del que se haga commit.
+* text=auto eol=lf
+
+*.sh      text eol=lf
+*.py      text eol=lf
+*.tf      text eol=lf
+*.hcl     text eol=lf
+*.tfvars  text eol=lf
+*.yaml    text eol=lf
+*.yml     text eol=lf
+*.md      text eol=lf
+*.json    text eol=lf
+*.txt     text eol=lf
+Dockerfile text eol=lf
+.gitignore text eol=lf
+
+# Binarios (por si se añaden en el futuro)
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.pdf binary
+*.zip binary
