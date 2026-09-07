@@ -22,8 +22,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
     # max_pods = 30
   }
 
-  
- 
+
+
   # Azure CNI para que pods reciban IPs del subnet
   network_profile {
     network_plugin    = "azure"
@@ -35,12 +35,20 @@ resource "azurerm_kubernetes_cluster" "aks" {
   role_based_access_control_enabled = true
   oidc_issuer_enabled               = true
   workload_identity_enabled         = true
-  depends_on                        = []
+
+  # Endurecimiento recomendado:
+  #   local_account_disabled = true
+  #   azure_active_directory_role_based_access_control { azure_rbac_enabled = true }
+  # Así se evita que un kubeconfig local filtrado (como el que estaba en el
+  # terraform.tfstate versionado) dé acceso admin al clúster.
+  local_account_disabled = false
+
+  depends_on = []
 }
 
 resource "azurerm_kubernetes_cluster_node_pool" "app" {
   name                  = "userpoole08"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id  # referencia a tu cluster
+  kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id # referencia a tu cluster
   vm_size               = "Standard_B2as_v2"
   node_count            = 1
   vnet_subnet_id        = data.azurerm_subnet.aks.id

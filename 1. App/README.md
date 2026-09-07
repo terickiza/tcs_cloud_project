@@ -1,6 +1,6 @@
 # DevOps Microservice - RESTAPI
 
-Microservicio REST ligero y seguro basado en **Flask** para demostración en laboratorio de Cloud. Implementa validación estricta de solicitudes POST al endpoint `/DevOps` con contrato de API bien definido.
+Microservicio REST ligero basado en **Flask**. Implementa validación estricta de solicitudes POST al endpoint `/DevOps` con un contrato de API bien definido, empaquetado en un contenedor no-root y desplegable en AKS.
 
 ---
 
@@ -17,7 +17,7 @@ Aplicación Python que expone un único endpoint REST (`/DevOps`) que:
 
 ### Casos de Uso
 
-- 🎯 Laboratorio en Azure (Azure AKS Microservice Platform)
+- 🎯 Backend de referencia desplegado en Azure AKS
 - 🔒 Validación de tokens JWT y API Keys en APIM
 - 📦 Microservicio containerizado en AKS con NGINX Ingress
 - 🚀 Pipeline CI/CD en Azure DevOps
@@ -385,16 +385,14 @@ kubectl exec -it <pod-name> -- /bin/bash
 ## 👤 Autor y Versión
 
 - **Versión**: 1.1
-- **Creado**: 2024
 - **Actualizado**: Febrero 2026
-- **Propietario**: erick.iza
-- **Equipo**: Azure AKS Microservice Platform
+- **Autor**: Erick Iza ([@terickiza](https://github.com/terickiza))
 
 ---
 
 ## 📄 Licencia
 
-Parte del laboratorio **Azure AKS Microservice Platform** - Laboratorio de Azure.
+Proyecto personal de demostración. Publicado bajo licencia MIT.
 
 ---
 

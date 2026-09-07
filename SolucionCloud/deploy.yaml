@@ -23,6 +23,12 @@ spec:
         app: devops-api
     spec:
       serviceAccountName: devops-api-sa
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
 
       nodeSelector:
         kubernetes.azure.com/agentpool: poolapps
@@ -30,6 +36,13 @@ spec:
       containers:
       - name: devops-api
         image: acrdevopslabdev01.azurecr.io/devops-api:node22
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+              - ALL
         ports:
         - containerPort: 8080
         resources:

@@ -35,7 +35,11 @@ resource "azurerm_kubernetes_cluster" "aks" {
   }
 
   role_based_access_control_enabled = true
-  local_account_disabled            = false
+  # Recomendado: local_account_disabled = true junto con
+  # azure_active_directory_role_based_access_control { azure_rbac_enabled = true }.
+  # Con local_account_disabled = false los kubeconfig locales (clusterAdmin/clusterUser)
+  # siguen siendo válidos; si se filtran dan acceso directo al clúster.
+  local_account_disabled = false
 
   tags       = { project = var.prefix }
   depends_on = [azurerm_virtual_network.vnetaks, azurerm_subnet.snet_aks, azurerm_subnet.snet_ingress]
@@ -46,7 +50,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "workloads" {
   kubernetes_cluster_id = azurerm_kubernetes_cluster.aks.id
   vm_size               = "Standard_DS2_v2"
   node_count            = 1
-  vnet_subnet_id        = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/rg-demo-aks-dev/providers/Microsoft.Network/virtualNetworks/demo-aks-vnet/subnets/demo-aks-snet-aks"
+  vnet_subnet_id        = azurerm_subnet.snet_aks.id
   zones                 = []
   tags = {
     Environment = "dev"

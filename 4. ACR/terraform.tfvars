@@ -14,8 +14,8 @@ acr_name = "acrdevopslab01" #CAMBIAR por algo único
 # SKU del ACR
 acr_sku = "Basic"
 
-# Habilitar usuario admin
-acr_admin_enabled = true
+# Usuario admin del ACR: deshabilitado. AKS autentica por managed identity (AcrPull).
+acr_admin_enabled = false
 
 # Nombre del AKS existente
 aks_name = "aks-e08" #CAMBIAR al nombre de tu AKS

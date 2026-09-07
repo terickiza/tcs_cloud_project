@@ -1,375 +1,127 @@
-# 🚀 Azure AKS Microservice Platform
+# Azure AKS Microservice Platform
 
-## Descripción
+Plataforma de referencia que despliega un microservicio REST en **Azure** de extremo a
+extremo con **Infraestructura como Código**: red, registro de contenedores, clúster
+**AKS**, y una capa de exposición con **API Management + Application Gateway (WAF)**.
+Todo versionado, modular y con un pipeline **CI/CD** en Azure DevOps.
 
-**Azure AKS Microservice Platform** es una solución integral de infraestructura en la nube para Azure que implementa una arquitectura moderna basada en **Azure Container Registry (ACR)**, **Kubernetes (AKS)**, **redes virtuales** y una **aplicación microservices**.
-
-El proyecto automatiza el despliegue de todos los componentes necesarios utilizando **Terraform** como Infrastructure as Code (IaC) y proporciona una aplicación Flask REST API containerizada con Docker.
+> Proyecto personal de portafolio. El objetivo es mostrar decisiones de arquitectura,
+> IaC y buenas prácticas de seguridad cloud, no un producto en producción.
 
 ---
 
-## 📋 Estructura del Proyecto
+## Qué demuestra este proyecto
 
-```
-azure-aks-platform/
-│
-├── 1. App/                          # Microservicio Flask
-│   ├── app.py                       # Aplicación Python con REST API
-│   ├── Dockerfile                   # Imagen Docker
-│   ├── deployment_ms01.yaml         # Manifest Kubernetes
-│   ├── requirements.txt             # Dependencias Python
-│   └── README.md                    # Documentación detallada
-│
-├── 2. Network/                      # Infraestructura de Red (Terraform)
-│   ├── main.tf                      # VNet y Subnet
-│   ├── variables.tf                 # Variables
-│   ├── outputs.tf                   # Salidas
-│   ├── providers.tf                 # Configuración de proveedores
-│   ├── terraform.tfvars             # Valores de variables
-│   └── README.md                    # Documentación
-│
-├── 3. AKS/                          # Cluster Kubernetes (Terraform)
-│   ├── aks.tf                       # Configuración de AKS
-│   ├── data-network.tf              # Referencias de red
-│   ├── variables.tf                 # Variables
-│   ├── outputs.tf                   # Salidas
-│   ├── providers.tf                 # Configuración de proveedores
-│   ├── terraform.tfvars             # Valores de variables
-│   └── README.md                    # Documentación
-│
-├── 4. ACR/                          # Azure Container Registry (Terraform)
-│   ├── main.tf                      # Configuración de ACR
-│   ├── variables.tf                 # Variables
-│   ├── outputs.tf                   # Salidas (credenciales, URLs)
-│   ├── versions.tf                  # Versiones de providers
-│   ├── terraform.tfvars             # Valores de variables
-│   └── README.md                    # Documentación
-│
-├── SoluciónCloud/                   # Manifests Kubernetes adicionales
-│   ├── azure-pipelines.yaml         # CI/CD Pipeline
-│   ├── deploy.yaml                  # Deployment adicional
-│   └── ...otros manifests
-│
-├── Guia.sh                          # Guía de instalación y comandos útiles
-├── .gitignore                       # Exclusiones de Git
-└── README.md                        # Este archivo
+| Área | Contenido |
+|---|---|
+| **IaC / Terraform** | Módulos separados por ciclo de vida (red → ACR → AKS), `data sources` entre módulos, variables tipadas y validadas, `outputs` marcados como `sensitive`, backend remoto en Azure Storage con autenticación Entra ID |
+| **Kubernetes / AKS** | Azure CNI, RBAC, OIDC issuer + Workload Identity, node pools system/user separados, NGINX Ingress con Internal Load Balancer, HPA |
+| **Contenedores** | Imagen mínima, usuario **no-root**, `readOnlyRootFilesystem`, `drop: ALL` de capabilities, `seccomp: RuntimeDefault`, límites de CPU/memoria, probes, servidor WSGI de producción (gunicorn) |
+| **Redes y borde** | Segmentación en subredes dedicadas (AKS, Ingress, APIM, App Gateway, Private Endpoint), NSGs con service tags, App Gateway **WAF_v2 en modo Prevention**, TLS 1.2 mínimo |
+| **Seguridad** | Sin secretos en el árbol de código ni en el estado; API keys/JWT vía Key Vault y variables `TF_VAR_*`; ACR sin usuario admin (autenticación por managed identity / AcrPull); escaneo de secretos e IaC en CI ([SECURITY.md](SECURITY.md)) |
+| **CI/CD** | Pipeline `validate → plan → apply` en Azure DevOps, artefacto de plan, **aprobación manual** por *environment* antes de aplicar |
+| **API Gateway** | APIM como gateway lógico: validación de API Key (`X-Parse-REST-API-Key`) y `validate-jwt`, routing al backend |
+
+---
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    client([Cliente]) -->|HTTPS| appgw[Application Gateway<br/>WAF_v2 · TLS]
+    appgw --> apim[API Management<br/>API Key + JWT]
+    apim --> ilb[NGINX Ingress<br/>Internal LB]
+    subgraph AKS[AKS · Azure CNI · RBAC]
+        ilb --> svc[Service] --> pod[Microservicio Flask<br/>contenedor no-root]
+    end
+    pod -.pull imagen.-> acr[(Azure Container Registry)]
+    apim -.secretos.-> kv[(Key Vault)]
+    aks_mi[Managed Identity AKS] -->|AcrPull| acr
 ```
 
 ---
 
-## 🎯 Requisitos Previos
+## Estructura del repositorio
 
-### Software Necesario
-- **Terraform** 1.0 o superior
-- **Azure CLI** 2.0 o superior
-- **kubectl** 1.20 o superior
-- **Docker** 20.10 o superior (para development)
-- **Git** 2.0 o superior
+```
+.
+├── 1. App/            Microservicio Flask + Dockerfile + manifiesto de despliegue
+├── 2. Network/        Terraform: VNet y subredes
+├── 3. AKS/            Terraform: clúster AKS (consume la red del módulo 2)
+├── 4. ACR/            Terraform: Container Registry + integración AcrPull con AKS
+├── SolucionCloud/     Diseño completo: RG, red, AKS, Key Vault, APIM, App Gateway,
+│                      manifiestos K8s (deploy, service, ingress, HPA) y pipeline CI/CD
+├── Guia.sh            Comandos paso a paso (instalación de herramientas y despliegue)
+├── SECURITY.md        Política de seguridad y manejo de secretos
+└── .github/workflows/ Escaneo de secretos (gitleaks) e IaC (Checkov) en cada push/PR
+```
 
-### Acceso a Azure
-- Suscripción activa en Azure
-- Credenciales configuradas en Azure CLI
-- Permisos necesarios para crear recursos (Contributor o superior)
-
-### Recursos Existentes
-- Resource Group: `rg-cloud-lab` (debe existir previamente)
+Los módulos `1–4` son un recorrido incremental; `SolucionCloud/` es la solución
+integrada de referencia.
 
 ---
 
-## ⚡ Guía de Inicio Rápido
+## Stack técnico
 
-### Paso 1: Clonar el Repositorio
-```bash
-git clone https://github.com/terickiza/azure-aks-platform.git
-cd azure-aks-platform
-```
-
-### Paso 2: Autenticarse en Azure
-```bash
-az login --use-device-code
-az account show  # Verificar suscripción activa
-```
-
-### Paso 3: Desplegar la Red (2. Network)
-```bash
-cd "2. Network"
-terraform init
-terraform plan -out=tfplan
-terraform apply tfplan
-cd ..
-```
-
-### Paso 4: Desplegar ACR (4. ACR)
-```bash
-cd "4. ACR"
-terraform init
-terraform plan -out=acr.tfplan
-terraform apply acr.tfplan
-# Guardar las credenciales mostradas en los outputs
-cd ..
-```
-
-### Paso 5: Desplegar AKS (3. AKS)
-```bash
-cd "3. AKS"
-terraform init
-terraform plan -out=aks.tfplan
-terraform apply aks.tfplan
-cd ..
-```
-
-### Paso 6: Obtener Credenciales de Kubernetes
-```bash
-az aks get-credentials --resource-group rg-cloud-lab --name aks-e08
-kubectl cluster-info
-```
-
-### Paso 7: Construir y Subir Imagen al ACR
-```bash
-cd "1. App"
-
-# Login al ACR
-az acr login --name <tu-acr-name>
-
-# Construir imagen
-docker build -t <tu-acr-name>.azurecr.io/flask-app:v1 .
-
-# Subir imagen al ACR
-docker push <tu-acr-name>.azurecr.io/flask-app:v1
-
-cd ..
-```
-
-### Paso 8: Desplegar Aplicación (1. App)
-```bash
-cd "1. App"
-# Actualizar deployment_ms01.yaml con la imagen del ACR
-kubectl apply -f deployment_ms01.yaml
-cd ..
-```
-
-### Paso 9: Validar Despliegue
-```bash
-kubectl get pods
-kubectl get svc
-# Obtener IP pública y probar API
-```
+**Azure:** AKS · ACR · Virtual Network · API Management · Application Gateway (WAF_v2) ·
+Key Vault · Managed Identity
+**IaC / tooling:** Terraform (azurerm ~> 4.0) · Helm · Azure CLI · kubectl
+**App:** Python 3.12 · Flask · gunicorn · Docker
+**CI/CD:** Azure DevOps Pipelines · gitleaks · Checkov
 
 ---
 
-## 🔗 Orden de Despliegue
+## Despliegue rápido
 
-**IMPORTANTE**: Respetar este orden para evitar errores de dependencias.
-
-```
-1. 2. Network     → Crear VNet y Subnet (Terraform)
-2. 4. ACR         → Crear Azure Container Registry (Terraform)
-3. 3. AKS         → Crear cluster Kubernetes con integración ACR (Terraform)
-4. 1. App         → Construir y subir imagen Docker al ACR
-5. 1. App         → Desplegar aplicación en AKS (kubectl)
-```
-
----
-
-## 🗑️ Orden de Destrucción (Cleanup)
-
-**IMPORTANTE**: Destruir en orden INVERSO para evitar errores.
-
-```
-1. 1. App         → Limpiar deployments (kubectl delete) - PRIMERO
-2. 3. AKS         → Destruir cluster (terraform destroy) - SEGUNDO
-3. 4. ACR         → Destruir registry (terraform destroy) - TERCERO
-4. 2. Network     → Destruir red (terraform destroy) - CUARTO
-```
-
----
-
-## 📚 Documentación Detallada
-
-Para información específica y detallada, consulta los README en cada directorio:
-
-- **[1. App/README.md](1.%20App/README.md)** - Aplicación Flask, API REST, Docker, Kubernetes
-- **[2. Network/README.md](2.%20Network/README.md)** - Infraestructura de red, VNet, Subnet, Terraform
-- **[3. AKS/README.md](3.%20AKS/README.md)** - Cluster AKS, nodos, configuración, Terraform
-- **[4. ACR/README.md](4.%20ACR/README.md)** - Azure Container Registry, integración con AKS, Terraform
-
----
-
-## 🛠️ Guía de Instalación Completa
-
-El archivo [Guia.sh](Guia.sh) contiene todos los comandos paso a paso para:
-- ✅ Instalar Docker, kubectl y Azure CLI
-- ✅ Crear y configurar Azure Container Registry (ACR)
-- ✅ Subir imágenes a Azure Container Registry (ACR)
-- ✅ Conectar ACR con AKS automáticamente
-- ✅ Configurar secretos de Kubernetes
-- ✅ Desplegar y monitorear aplicaciones
-- ✅ Pruebas de API
+Requisitos: Terraform ≥ 1.6, Azure CLI, `kubectl`, Docker y una suscripción de Azure.
 
 ```bash
-# Ver la guía completa
-cat Guia.sh
+git clone https://github.com/terickiza/cloud_project.git
+cd cloud_project
+az login
+
+# Estado remoto: copiar backend.hcl.example -> backend.hcl en cada módulo y ajustar.
+
+# Orden: red -> ACR -> AKS
+terraform -chdir="2. Network" init -backend-config=backend.hcl && terraform -chdir="2. Network" apply
+terraform -chdir="4. ACR"     init -backend-config=backend.hcl && terraform -chdir="4. ACR" apply
+terraform -chdir="3. AKS"     init -backend-config=backend.hcl && terraform -chdir="3. AKS" apply
+
+# Imagen del microservicio
+az acr login --name <tu-acr>
+docker build -t <tu-acr>.azurecr.io/devops-api:v1 "1. App"
+docker push <tu-acr>.azurecr.io/devops-api:v1
+
+# Despliegue en AKS
+az aks get-credentials -g <tu-rg> -n <tu-aks>
+kubectl apply -f "1. App/deployment_ms01.yaml"
 ```
 
----
+Destrucción en orden inverso: `AKS → ACR → Network`.
 
-## 🔍 Infraestructura en Azure
+### Contrato de la API
 
-### Red (Network)
-- **VNet**: `vnet-e08` (10.58.0.0/16)
-- **Subnet**: `snet-e08` (10.58.1.0/24)
-- **Resource Group**: `rg-cloud-lab`
-- **Región**: East US
+`POST /DevOps` con cuerpo **exacto**:
 
-### Container Registry (ACR)
-- **Registry**: `acrdevopslab01.azurecr.io`
-- **SKU**: Basic (desarrollo) / Standard (producción)
-- **Admin User**: Habilitado
-- **Integración**: Automática con AKS (AcrPull role)
-- **Resource Group**: `rg-cloud-lab`
-
-### Kubernetes (AKS)
-- **Cluster**: `aks-e08`
-- **CNI**: Azure Container Networking Interface
-- **RBAC**: Habilitado
-- **Workload Identity**: Habilitado
-- **Node Pool**: Standard_B2s (1 nodo inicial)
-- **ACR Integration**: Configurada automáticamente
-
-### Aplicación
-- **Runtime**: Python 3.7+
-- **Framework**: Flask 2.3.0
-- **API Endpoint**: POST `/DevOps`
-- **Puerto**: 5000 (interno) → 80 (externo)
-- **Imagen**: Almacenada en ACR privado
-
----
-
-## 🚨 Variables de Ambiente Críticas
-
-Asegúrate de que estas variables estén configuradas antes de ejecutar Terraform:
-
-```bash
-# Azure
-export AZURE_SUBSCRIPTION_ID="<tu-subscription-id>"
-export AZURE_TENANT_ID="<tu-tenant-id>"
-
-# Terraform
-export TF_VAR_location="eastus"
-export TF_VAR_resource_group_name="rg-cloud-lab"
-export TF_VAR_acr_name="<tu-acr-name-unico>"  # Solo letras y números
+```json
+{ "message": "This is a test", "to": "Juan Perez", "from": "Rita Asturia", "timeToLifeSec": 45 }
 ```
 
----
-
-## 🐳 Trabajar con ACR
-
-### Login al ACR
-```bash
-# Opción 1: Con Azure CLI (Recomendado)
-az acr login --name <tu-acr-name>
-
-# Opción 2: Con Docker y credenciales
-docker login <tu-acr-name>.azurecr.io
-```
-
-### Obtener Credenciales del ACR
-```bash
-# Usuario
-az acr credential show --name <tu-acr-name> --query username --output tsv
-
-# Contraseña
-az acr credential show --name <tu-acr-name> --query passwords[0].value --output tsv
-
-# O con Terraform outputs
-cd "4. ACR"
-terraform output -raw acr_admin_username
-terraform output -raw acr_admin_password
-```
-
-### Construir y Subir Imágenes
-```bash
-# Construir imagen
-docker build -t <tu-acr-name>.azurecr.io/flask-app:v1 .
-
-# Subir imagen
-docker push <tu-acr-name>.azurecr.io/flask-app:v1
-
-# Listar imágenes en ACR
-az acr repository list --name <tu-acr-name> --output table
-
-# Ver tags de una imagen
-az acr repository show-tags --name <tu-acr-name> --repository flask-app --output table
-```
-
-### Verificar Integración ACR-AKS
-```bash
-# Verificar que AKS puede acceder al ACR
-az aks check-acr \
-  --name aks-e08 \
-  --resource-group rg-cloud-lab \
-  --acr <tu-acr-name>.azurecr.io
-```
+Respuesta `200`: `{ "message": "Hello Juan Perez your message will be sent" }`
+Cualquier otro método o cuerpo inválido → `{ "error": "ERROR" }`.
 
 ---
 
-## 📞 Soporte y Contacto
+## Seguridad
 
-- **Autor**: Erick Iza
-- **Email**: terickiza@gmail.com
-- **Versión**: 1.1.0
-- **Fecha**: Febrero 2026
-
----
-
-## 📄 Licencia
-
-Este proyecto está licenciado bajo la **Licencia MIT**. Consulta el archivo `LICENSE` para más detalles.
+Este repositorio es público y aplica las prácticas descritas en **[SECURITY.md](SECURITY.md)**:
+sin estado ni planes de Terraform versionados, sin secretos en `.tf`, `.gitignore`
+endurecido, y escaneo automático de secretos e IaC en CI.
 
 ---
 
-## 🌐 Enlaces Útiles
+## Autor
 
-- [Documentación de Terraform](https://www.terraform.io/docs)
-- [Documentación de Azure AKS](https://docs.microsoft.com/en-us/azure/aks/)
-- [Documentación de Azure ACR](https://docs.microsoft.com/en-us/azure/container-registry/)
-- [Documentación de Kubernetes](https://kubernetes.io/docs)
-- [Documentación de Azure CLI](https://docs.microsoft.com/en-us/cli/azure/)
-- [Docker Documentation](https://docs.docker.com)
-- [Repositorio GitHub](https://github.com/terickiza/azure-aks-platform)
+**Erick Iza** — [@terickiza](https://github.com/terickiza) · terickiza@gmail.com
 
----
-
-## ✅ Validación de Estatus
-
-Para verificar que todo está correctamente configurado:
-
-```bash
-# Verificar autenticación
-az account show
-
-# Verificar ACR
-az acr show --name <tu-acr-name> --output table
-
-# Verificar conexión a Kubernetes
-kubectl cluster-info
-
-# Verificar recursos
-kubectl get all
-kubectl get nodes
-kubectl get pods
-
-# Verificar terraform
-terraform version
-
-# Verificar imágenes en ACR
-az acr repository list --name <tu-acr-name> --output table
-```
-
----
-
-**Última Actualización**: Febrero 26, 2026
-
----
-
-*Para más información, consulta los README específicos de cada carpeta o la [Guía de Instalación](Guia.sh).*
+Publicado bajo licencia MIT.

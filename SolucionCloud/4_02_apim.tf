@@ -9,6 +9,9 @@ resource "azurerm_network_security_group" "apim_nsg" {
   resource_group_name = azurerm_resource_group.rg.name
 
 
+  # Tráfico de gateway/portal desde Internet (APIM en modo External).
+  # Si el consumo real es solo vía Application Gateway, restringir source al
+  # service tag "GatewayManager" / IP pública del AppGW en lugar de "Internet".
   security_rule {
     name                       = "inbound-https-443"
     priority                   = 100
@@ -16,11 +19,13 @@ resource "azurerm_network_security_group" "apim_nsg" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_ranges    = ["443"] # portal/gateway
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
+    destination_port_ranges    = ["443"]
+    source_address_prefix      = "Internet"
+    destination_address_prefix = "VirtualNetwork"
   }
 
+  # Endpoint de management de APIM: requisito Microsoft = solo el service tag
+  # "ApiManagement". NUNCA abrir 3443 a "*"/Internet.
   security_rule {
     name                       = "inbound-mgmt-3443"
     priority                   = 110
@@ -28,9 +33,9 @@ resource "azurerm_network_security_group" "apim_nsg" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "3443" # endpoint de mgmt
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
+    destination_port_range     = "3443"
+    source_address_prefix      = "ApiManagement"
+    destination_address_prefix = "VirtualNetwork"
   }
 
 
@@ -116,9 +121,11 @@ resource "azurerm_api_management_named_value" "nv_expected_api_key" {
   display_name        = "expected-api-key"
   resource_group_name = azurerm_resource_group.rg.name
   api_management_name = azurerm_api_management.apim.name
-  value               = "YOUR_VALUE" # o con Key Vault abajo
-  secret              = true
-  tags                = ["automation"]
+  # Valor inyectado vía TF_VAR_expected_api_key (variable group / Key Vault del pipeline).
+  # Alternativa recomendada: value_from_key_vault { secret_id = ... }
+  value  = var.expected_api_key
+  secret = true
+  tags   = ["automation"]
 }
 
 output "apim_gateway_url" {

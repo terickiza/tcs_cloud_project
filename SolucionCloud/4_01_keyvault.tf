@@ -22,5 +22,6 @@ data "azurerm_role_definition" "kv_secret_user" {
 resource "azurerm_role_assignment" "apim_kv_secrets_user" {
   scope              = azurerm_key_vault.kv.id
   role_definition_id = data.azurerm_role_definition.kv_secret_user.role_definition_id
-  principal_id       = "c7349be8-dbf2-4580-a895-c4d937f7afbf" # principalId de la MI de APIM
+  # Referencia directa a la identidad administrada de APIM en vez de un GUID fijo.
+  principal_id = azurerm_api_management.apim.identity[0].principal_id
 }

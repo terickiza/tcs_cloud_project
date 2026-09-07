@@ -4,19 +4,24 @@ trigger:
     include:
       - main
       - master
- 
+
 parameters:
   - name: environment
     displayName: Entorno
     type: string
     default: dev
     values: [dev, qa, prod]
- 
+
 variables:
-  TF_WORKING_DIR: './terraform/0-dev/'
-  AZURE_SERVICE_CONNECTION: 'azure-dev'
-  SUBSCRIPTION_ID: '00000000-0000-0000-0000-000000000000'  # <-- tu GUID real
- 
+  # Grupo de variables en Azure DevOps (Library). Debe contener, como variables
+  # secretas:  ARM_SUBSCRIPTION_ID  y  TF_VAR_expected_api_key
+  # Nunca poner GUIDs de suscripción ni secretos literales en este archivo.
+  - group: terraform-${{ parameters.environment }}
+  - name: TF_WORKING_DIR
+    value: './terraform/0-dev/'
+  - name: AZURE_SERVICE_CONNECTION
+    value: 'azure-dev'
+
 resources:
   containers:
     - container: dockerterraform
@@ -25,7 +30,7 @@ resources:
       options: '--user 0 --entrypoint ""'
       env:
         TF_IN_AUTOMATION: 'true'
- 
+
 stages:
   - stage: Validate
     displayName: "Validate Terraform"
@@ -37,7 +42,7 @@ stages:
         steps:
           - checkout: self
             clean: true
- 
+
           - task: Bash@3
             displayName: "Mostrar versión de Terraform"
             inputs:
@@ -45,7 +50,7 @@ stages:
               script: |
                 set -euo pipefail
                 terraform -version
- 
+
           - task: AzureCLI@2
             displayName: "Terraform fmt, init, validate (Azure CLI auth)"
             inputs:
@@ -55,27 +60,24 @@ stages:
               addSpnToEnvironment: true
               inlineScript: |
                 set -euo pipefail
- 
-                # Fijar explícitamente la suscripción de trabajo
-                az account set --subscription "$(SUBSCRIPTION_ID)"
+
+                # La suscripción la fija el service connection; solo verificamos.
                 echo "Suscripción actual:"
                 az account show --query id -o tsv
- 
+
                 cd "$(TF_WORKING_DIR)"
- 
-                # NO OIDC vars; Terraform usará la sesión de Azure CLI
+
                 terraform fmt -check -diff
                 terraform init -input=false -reconfigure
                 terraform validate
 
-  
   - stage: Plan
     displayName: "Plan Terraform"
     dependsOn: Validate
     jobs:
       - job: plan
         displayName: "Terraform plan y publicar artefacto"
-        pool: { name: Default }         # tu agente Linux/self-hosted
+        pool: { name: Default }
         container: dockerterraform
         steps:
           - checkout: self
@@ -90,7 +92,6 @@ stages:
               inlineScript: |
                 set -euo pipefail
 
-                az account set --subscription "$(SUBSCRIPTION_ID)"
                 echo "Suscripción actual:"
                 az account show --query id -o tsv
 
@@ -101,6 +102,8 @@ stages:
                   -out="$(Build.ArtifactStagingDirectory)/tfplan-$(environment).bin" \
                   -input=false \
                   -no-color
+            env:
+              TF_VAR_expected_api_key: $(TF_VAR_expected_api_key)
 
           - task: PublishPipelineArtifact@1
             displayName: "Publicar artefacto: tfplan"
@@ -108,36 +111,44 @@ stages:
               targetPath: "$(Build.ArtifactStagingDirectory)"
               artifactName: "tfplan-$(environment)"
 
- 
   - stage: Apply
-    displayName: "Apply Terraform (sin aprobación)"
+    displayName: "Apply Terraform (con aprobación manual)"
     dependsOn: Plan
     condition: succeeded('Plan')
     jobs:
-      - job: apply
+      # 'deployment' + 'environment' habilita approvals/checks en Azure DevOps.
+      # Configurar en:  Pipelines > Environments > terraform-<env> > Approvals and checks.
+      - deployment: apply
         displayName: "Aplicar plan terraform"
         pool: { name: Default }
         container: dockerterraform
-        steps:
-          - checkout: self
-          - download: current
-            artifact: "tfplan-$(environment)"
- 
-          - task: AzureCLI@2
-            displayName: "Terraform init & apply (Azure CLI auth)"
-            inputs:
-              azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
-              scriptType: 'bash'
-              scriptLocation: 'inlineScript'
-              addSpnToEnvironment: true
-              inlineScript: |
-                set -euo pipefail
- 
-                az account set --subscription "$(SUBSCRIPTION_ID)"
-                echo "Suscripción actual:"
-                az account show --query id -o tsv
- 
-                cd "$(TF_WORKING_DIR)"
- 
-                terraform init -input=false
-                terraform apply -auto-approve -input=false -no-color
+        environment: "terraform-$(environment)"
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                - download: current
+                  artifact: "tfplan-$(environment)"
+
+                - task: AzureCLI@2
+                  displayName: "Terraform init & apply (plan guardado)"
+                  inputs:
+                    azureSubscription: "$(AZURE_SERVICE_CONNECTION)"
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    addSpnToEnvironment: true
+                    inlineScript: |
+                      set -euo pipefail
+
+                      echo "Suscripción actual:"
+                      az account show --query id -o tsv
+
+                      cd "$(TF_WORKING_DIR)"
+
+                      terraform init -input=false
+                      # Aplica exactamente el plan aprobado; no re-planifica.
+                      terraform apply -input=false -no-color \
+                        "$(Pipeline.Workspace)/tfplan-$(environment)/tfplan-$(environment).bin"
+                  env:
+                    TF_VAR_expected_api_key: $(TF_VAR_expected_api_key)

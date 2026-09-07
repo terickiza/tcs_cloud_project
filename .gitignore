@@ -1,38 +1,63 @@
+# ─────────────────────────────────────────────
 # Terraform
+# ─────────────────────────────────────────────
 .terraform/
-.terraform.lock.hcl
-*.tfplan
+# State: NEVER commit. Contains secrets (kube_config, passwords, connection strings).
 *.tfstate
 *.tfstate.*
 terraform.tfstate
 terraform.tfstate.backup
+# Plan files: contain the full resource diff incl. sensitive values.
+*.tfplan
+tfplan
+tfplan.*
+plan.out
+# Crash / debug logs
 crash.log
 crash.*.log
+# Local overrides
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+# NOTE: .terraform.lock.hcl SHOULD be committed for reproducible provider versions.
 
-# IDE
+# ─────────────────────────────────────────────
+# Secrets / credentials
+# ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*_rsa
+*_ed25519
+kubeconfig
+*.kubeconfig
+.azure/
+azureProfile.json
+credentials
+secrets.*.yaml
+secrets.*.yml
+
+# ─────────────────────────────────────────────
+# IDE / OS
+# ─────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Local development
-.env
-.env.local
-*.pem
-*.key
-
-# Outputs
+# ─────────────────────────────────────────────
+# Outputs / logs
+# ─────────────────────────────────────────────
 *.out
-*.json
-
-# Logs
 *.log
+tf-output.json
+terraform-output.json
+backend.hcl

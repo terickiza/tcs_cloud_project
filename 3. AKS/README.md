@@ -117,16 +117,14 @@ kubectl cluster-info
 ## 👤 Autor y Versión
 
 - **Versión**: 1.0
-- **Creado**: 2024-2025
 - **Actualizado**: Febrero 2026
-- **Propietario**: erick.iza
-- **Equipo**: Azure AKS Microservice Platform
+- **Autor**: Erick Iza ([@terickiza](https://github.com/terickiza))
 
 ---
 
 ## 📄 Licencia
 
-Este proyecto forma parte del laboratorio **Azure AKS Microservice Platform** - Laboratorio de Azure. Uso exclusivo para fines educativos y de demostración.
+Proyecto personal de demostración. Publicado bajo licencia MIT.
 
 ---
 

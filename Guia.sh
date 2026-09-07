@@ -1,11 +1,10 @@
 #!/bin/bash
 
 ################################################################################
-#                  AZURE AKS MICROSERVICE PLATFORM - GUIA DE INSTALACION                    #
+#            AZURE AKS MICROSERVICE PLATFORM - GUIA DE INSTALACION              #
 #                                                                              #
-#  Este script contiene todos los pasos necesarios para desplegar la          #
-#  infraestructura de Azure AKS Microservice Platform en Azure AKS usando Docker            #
-#  y herramientas de línea de comandos.                                       #
+#  Este script contiene los pasos para desplegar la infraestructura en        #
+#  Azure AKS usando Docker y herramientas de línea de comandos.               #
 #                                                                              #
 #  Versión: 1.0 | Fecha: Febrero 2026                                         #
 ################################################################################

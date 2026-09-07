@@ -31,9 +31,9 @@ variable "acr_sku" {
 }
 
 variable "acr_admin_enabled" {
-  description = "Habilitar usuario administrador del ACR"
+  description = "Habilitar el usuario administrador del ACR. Recomendado: false. La autenticación desde AKS se hace por managed identity (rol AcrPull), no por usuario admin."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "aks_name" {

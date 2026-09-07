@@ -83,11 +83,12 @@ variable "kv_snet_appgw_cidr" {
   default     = ["10.41.3.0/24"]
 }
 
-# Secretos que usará APIM (Named Values) y microservicio (opcional)
+# Secretos que usará APIM (Named Values) y microservicio (opcional).
+# Sin default: se inyecta por TF_VAR_expected_api_key desde el pipeline
+# (variable group / Key Vault), nunca versionado en el repo.
 variable "expected_api_key" {
   description = "Valor esperado del header X-Parse-REST-API-Key."
   type        = string
-  default     = "00000000-0000-0000-0000-000000000000"
   sensitive   = true
 }
 

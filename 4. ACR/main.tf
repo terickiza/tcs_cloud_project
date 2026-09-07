@@ -24,7 +24,8 @@ resource "azurerm_container_registry" "acr" {
   sku                 = var.acr_sku
   admin_enabled       = var.acr_admin_enabled
 
-  # Configuración de red pública
+  # Basic SKU solo admite acceso público. Para restringir por red (private
+  # endpoint / IP allow-list) se requiere SKU Premium y public_network_access_enabled = false.
   public_network_access_enabled = true
 
   # Deshabilitar características premium (no necesarias para Basic)
